@@ -1,0 +1,13 @@
+{
+  "name": "market-worker",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "yahoo-finance2": "^2.0.0",
+    "ioredis": "^5.3.2",
+    "node-fetch": "^3.3.1"
+  }
+}

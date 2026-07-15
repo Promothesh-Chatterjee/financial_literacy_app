@@ -32,3 +32,21 @@ async def test_signup_onboarding_and_portfolio(async_client):
     assert r3.status_code == 200
     data = r3.json()
     assert data['cash'] == 100000 or float(data['cash']) == 100000.0
+
+
+@pytest.mark.asyncio
+async def test_daily_snapshot_ingest_is_idempotent(async_client):
+    payload = {
+        'date': '2026-07-15',
+        'index_name': 'NIFTY',
+        'open': 22000,
+        'high': 22100,
+        'low': 21950,
+        'close': 22050,
+        'metadata': {'source': 'worker'}
+    }
+    r = await async_client.post('/market/daily_snapshot', json=payload, headers={'x-market-secret': 'test-secret'})
+    assert r.status_code == 200
+
+    r2 = await async_client.post('/market/daily_snapshot', json=payload, headers={'x-market-secret': 'test-secret'})
+    assert r2.status_code == 200

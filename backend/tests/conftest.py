@@ -3,6 +3,7 @@ import tempfile
 import asyncio
 import shutil
 import pytest
+import pytest_asyncio
 
 # Set env vars before importing app so pydantic Settings picks them up
 TEST_DB = os.path.abspath(os.path.join(os.path.dirname(__file__), "test.db"))
@@ -10,6 +11,7 @@ os.environ.setdefault("DATABASE_URL", f"sqlite+aiosqlite:///{TEST_DB}")
 os.environ.setdefault("REDIS_URL", "redis://localhost:6379/0")
 os.environ.setdefault("SECRET_KEY", "test-secret-key")
 os.environ.setdefault("ALLOW_DEV_INIT", "true")
+os.environ.setdefault("MARKET_WORKER_SECRET", "test-secret")
 
 from app.main import app
 from app.db import engine, Base
@@ -46,7 +48,7 @@ def prepare_database(event_loop):
             pass
 
 
-@pytest.fixture
+@pytest_asyncio.fixture
 async def async_client():
     from httpx import AsyncClient
     async with AsyncClient(app=app, base_url="http://testserver") as ac:

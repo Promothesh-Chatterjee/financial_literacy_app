@@ -21,7 +21,7 @@ export default function Login() {
       credentials: 'include',
     })
     if (res.ok) {
-      router.push('/onboarding')
+      router.push('/dashboard')
     } else {
       const data = await res.json()
       setError(data.detail || 'Login failed')

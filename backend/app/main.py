@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from .routers import init_db
 from .routers import auth, onboarding
-from .routers import tokens, portfolio, market
+from .routers import tokens, portfolio, market, trade
 from .routers import admin_market
 from .routers import daily_snapshot
 from .tasks import cleanup_refresh_tokens_loop
@@ -32,6 +32,7 @@ app.include_router(onboarding.router)
 app.include_router(tokens.router)
 app.include_router(portfolio.router)
 app.include_router(market.router)
+app.include_router(trade.router)
 app.include_router(admin_market.router)
 app.include_router(daily_snapshot.router)
 

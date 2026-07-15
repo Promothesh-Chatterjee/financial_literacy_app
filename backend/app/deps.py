@@ -14,8 +14,7 @@ async def get_session():
         yield session
 
 
-async def get_current_user(request: Request, token: str = Depends(oauth2_scheme), session=Depends(get_session)):
-    # Prefer cookie token if present
+async def get_current_user(request: Request, token: str | None = None, session=Depends(get_session)):
     token_value = None
     if request.cookies.get("access_token"):
         token_value = request.cookies.get("access_token")
@@ -24,6 +23,7 @@ async def get_current_user(request: Request, token: str = Depends(oauth2_scheme)
 
     if not token_value:
         raise HTTPException(status_code=401, detail="Not authenticated")
+
     try:
         payload = jwt.decode(token_value, settings.secret_key, algorithms=["HS256"])
         user_id = int(payload.get("sub"))

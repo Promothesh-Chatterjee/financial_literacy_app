@@ -83,7 +83,7 @@ class Transaction(Base):
     quantity = Column(Numeric(20, 4), default=0)
     price = Column(Numeric(20, 4), default=0)
     fees = Column(Numeric(20, 4), default=0)
-    metadata = Column(JSON)
+    payload = Column(JSON)
     created_at = Column(DateTime, default=now)
 
 
@@ -106,7 +106,7 @@ class DailyMarketSnapshot(Base):
     high = Column(Numeric(20, 4))
     low = Column(Numeric(20, 4))
     close = Column(Numeric(20, 4))
-    metadata = Column(JSON)
+    payload = Column(JSON)
 
 
 class NewsFeedCache(Base):

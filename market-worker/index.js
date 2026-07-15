@@ -1,11 +1,27 @@
-const yf = require('yahoo-finance2').default
 const Redis = require('ioredis')
 
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379'
 const redis = new Redis(REDIS_URL)
+const fetchImpl = globalThis.fetch ? globalThis.fetch.bind(globalThis) : require('node-fetch')
+
+let yfClient
+
+async function getYfClient() {
+  if (!yfClient) {
+    const mod = await import('yahoo-finance2')
+    yfClient = mod.default || mod
+  }
+  return yfClient
+}
+
+function parsePrice(quote) {
+  if (!quote) return null
+  return quote.regularMarketPrice || quote.price?.regularMarketPrice || quote.previousClose || null
+}
 
 async function fetchIndices() {
   try {
+    const yf = await getYfClient()
     const nifty = await yf.quoteSummary('^NSEI')
     const sensex = await yf.quoteSummary('^BSESN')
 
@@ -24,8 +40,14 @@ async function fetchIndices() {
     for (const t of tickers) {
       try {
         const q = await yf.quote(t)
-        const price = q?.regularMarketPrice || q?.price?.regularMarketPrice || null
-        const obj = { price: price, fetched_at: new Date().toISOString() }
+        const price = parsePrice(q)
+        const obj = {
+          price,
+          fetched_at: new Date().toISOString(),
+          source: 'worker',
+          ticker: t,
+          close: q?.regularMarketPreviousClose || q?.previousClose || null,
+        }
         await redis.set(`market:prices:${t}`, JSON.stringify(obj), 'EX', 60 * 5)
       } catch (e) {
         console.warn('failed to fetch ticker', t, e && e.message)
@@ -44,9 +66,14 @@ async function fetchIndices() {
           high: nifty?.price?.regularMarketDayHigh || null,
           low: nifty?.price?.regularMarketDayLow || null,
           close: nifty?.price?.regularMarketPreviousClose || null,
-          metadata: { raw: nifty }
+          metadata: { raw: nifty },
+          payload: {
+            price: parsePrice(nifty?.price),
+            source: 'worker',
+            fetched_at: new Date().toISOString(),
+          }
         }
-        await fetch(BACKEND_SNAPSHOT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-market-secret': WORKER_SECRET }, body: JSON.stringify(body) })
+        await fetchImpl(BACKEND_SNAPSHOT_URL, { method: 'POST', headers: { 'Content-Type': 'application/json', 'x-market-secret': WORKER_SECRET }, body: JSON.stringify(body) })
       } catch (e) {
         console.warn('failed to post snapshot', e && e.message)
       }

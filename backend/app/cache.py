@@ -1,9 +1,9 @@
-import aioredis
+from redis import asyncio as aioredis
 from .config import settings
 
 redis = None
 
-async def get_redis() -> aioredis.Redis | None:
+async def get_redis():
     global redis
     if redis is None:
         try:

@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends
 from ..deps import get_current_user, get_session
 from sqlalchemy import select
-from ..models import VirtualWallet, Holding
+from ..models import VirtualWallet, Holding, DailyMarketSnapshot
 from sqlalchemy.ext.asyncio import AsyncSession
 from ..cache import get_redis
 import json
+from datetime import datetime
 
 router = APIRouter(prefix="/portfolio", tags=["portfolio"])
 
@@ -22,20 +23,31 @@ async def summary(user=Depends(get_current_user), session: AsyncSession = Depend
     items = []
     # attempt to fetch live prices from Redis (key: market:prices:<TICKER>)
     redis = await get_redis()
+    today = datetime.utcnow().date()
     for h in holdings:
         qty = float(h.quantity)
         avg_price = float(h.avg_price)
         current_price = avg_price
         try:
-            if redis is not None:
+            snapshot_q = await session.execute(
+                select(DailyMarketSnapshot).where(
+                    DailyMarketSnapshot.index_name == h.ticker,
+                    DailyMarketSnapshot.date == today,
+                )
+            )
+            snapshot = snapshot_q.scalars().first()
+            if snapshot is not None:
+                payload = snapshot.payload or {}
+                price = payload.get("price") or payload.get("close") or payload.get("latest_price")
+                if price is not None:
+                    current_price = float(price)
+            elif redis is not None:
                 key = f"market:prices:{h.ticker}"
                 raw = await redis.get(key)
                 if raw:
                     parsed = json.loads(raw)
-                    # expected format: { price: number, fetched_at: iso }
                     current_price = float(parsed.get('price', avg_price))
         except Exception:
-            # on any redis error, fallback to avg_price
             current_price = avg_price
 
         val = qty * current_price

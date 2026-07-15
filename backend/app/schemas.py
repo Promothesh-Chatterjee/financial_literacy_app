@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr
-from typing import Optional, List
+from typing import Optional, List, Literal
 
 
 class UserCreate(BaseModel):
@@ -19,3 +19,10 @@ class OnboardingData(BaseModel):
     objectives: List[str]
     risk_profile: str
     starting_capital: float
+
+
+class TradeOrder(BaseModel):
+    ticker: str
+    action: Literal["BUY", "SELL"]
+    quantity: float
+    price: Optional[float] = None
